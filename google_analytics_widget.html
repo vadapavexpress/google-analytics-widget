@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>Google Analytics Widget</title>
+        <script src="//js.jotform.com/JotFormCustomWidget.min.js"></script>
+        <script async src="https://www.googletagmanager.com/gtag/js?id=G-XXXXXXXXXX"></script>
+    </head>
+    <body>
+        <div id="main">
+            <h3>Google Analytics Integration</h3>
+            <p>Enter your Google Analytics Tracking ID to track form activity:</p>
+            <input type="text" id="gaTrackingId" placeholder="Enter your Google Analytics ID (e.g., G-XXXXXXXXXX)">
+            <p id="status" style="color: red;"></p>
+        </div>
+        <script type="text/javascript">
+            JFCustomWidget.subscribe("ready", function() {
+                const gaInput = document.getElementById('gaTrackingId');
+                const status = document.getElementById('status');
+
+                // Load default value if provided
+                const presetValue = JFCustomWidget.getWidgetSetting("defaultGAId");
+                if (presetValue) {
+                    gaInput.value = presetValue;
+                }
+
+                JFCustomWidget.subscribe("submit", function() {
+                    const gaId = gaInput.value.trim();
+
+                    if (/^G-[A-Z0-9]+$/.test(gaId)) {
+                        // Initialize Google Analytics
+                        window.dataLayer = window.dataLayer || [];
+                        function gtag() { dataLayer.push(arguments); }
+                        gtag('js', new Date());
+                        gtag('config', gaId);
+
+                        // Send the data back to Jotform
+                        JFCustomWidget.sendSubmit({ valid: true, value: gaId });
+                        status.textContent = "Tracking ID is valid and submitted.";
+                        status.style.color = "green";
+                    } else {
+                        status.textContent = "Invalid Google Analytics Tracking ID.";
+                        JFCustomWidget.sendSubmit({ valid: false });
+                    }
+                });
+            });
+        </script>
+    </body>
+</html>
