@@ -3,42 +3,63 @@
     <head>
         <title>Google Analytics Widget</title>
         <script src="//js.jotform.com/JotFormCustomWidget.min.js"></script>
-        <script async src="https://www.googletagmanager.com/gtag/js?id=G-XXXXXXXXXX"></script>
     </head>
     <body>
         <div id="main">
             <h3>Google Analytics Integration</h3>
             <p>Enter your Google Analytics Tracking ID to track form activity:</p>
-            <input type="text" id="gaTrackingId" placeholder="Enter your Google Analytics ID (e.g., G-XXXXXXXXXX)">
+            <input 
+                type="text" 
+                id="gaTrackingId" 
+                placeholder="Enter your Google Analytics ID (e.g., G-XXXXXXXXXX)" 
+                style="width: 100%; padding: 8px; margin: 10px 0;"
+            >
             <p id="status" style="color: red;"></p>
         </div>
         <script type="text/javascript">
+            // Ensure readiness of widget before executing code
             JFCustomWidget.subscribe("ready", function() {
                 const gaInput = document.getElementById('gaTrackingId');
                 const status = document.getElementById('status');
 
-                // Load default value if provided
+                // Fetch the default Google Analytics ID if provided
                 const presetValue = JFCustomWidget.getWidgetSetting("defaultGAId");
                 if (presetValue) {
                     gaInput.value = presetValue;
                 }
 
+                // Validate and initialize Google Analytics on form submission
                 JFCustomWidget.subscribe("submit", function() {
                     const gaId = gaInput.value.trim();
 
                     if (/^G-[A-Z0-9]+$/.test(gaId)) {
-                        // Initialize Google Analytics
-                        window.dataLayer = window.dataLayer || [];
-                        function gtag() { dataLayer.push(arguments); }
-                        gtag('js', new Date());
-                        gtag('config', gaId);
+                        // Dynamically load Google Analytics script with the provided ID
+                        const gtagScript = document.createElement('script');
+                        gtagScript.async = true;
+                        gtagScript.src = `https://www.googletagmanager.com/gtag/js?id=${gaId}`;
+                        document.head.appendChild(gtagScript);
 
-                        // Send the data back to Jotform
-                        JFCustomWidget.sendSubmit({ valid: true, value: gaId });
-                        status.textContent = "Tracking ID is valid and submitted.";
-                        status.style.color = "green";
+                        gtagScript.onload = () => {
+                            window.dataLayer = window.dataLayer || [];
+                            function gtag() { dataLayer.push(arguments); }
+                            gtag('js', new Date());
+                            gtag('config', gaId);
+
+                            // Notify Jotform of success and provide the valid GA ID
+                            JFCustomWidget.sendSubmit({ valid: true, value: gaId });
+                            status.textContent = "Tracking ID is valid and submitted.";
+                            status.style.color = "green";
+                        };
+
+                        gtagScript.onerror = () => {
+                            status.textContent = "Failed to load Google Analytics script.";
+                            status.style.color = "red";
+                            JFCustomWidget.sendSubmit({ valid: false });
+                        };
                     } else {
+                        // Invalid GA ID handling
                         status.textContent = "Invalid Google Analytics Tracking ID.";
+                        status.style.color = "red";
                         JFCustomWidget.sendSubmit({ valid: false });
                     }
                 });
